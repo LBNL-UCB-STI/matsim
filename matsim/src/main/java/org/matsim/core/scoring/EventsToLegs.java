@@ -66,6 +66,8 @@ public final class EventsToLegs
 		TeleportationArrivalEventHandler, TransitDriverStartsEventHandler, PersonEntersVehicleEventHandler,
 		VehicleArrivesAtFacilityEventHandler, VehicleEntersTrafficEventHandler, VehicleLeavesTrafficEventHandler {
 
+	private static final Logger logger = Logger.getLogger(EventsToLegs.class);
+
 	public static final String ENTER_VEHICLE_TIME_ATTRIBUTE_NAME = "enterVehicleTime";
 
 	private static class PendingTransitTravel {
@@ -231,6 +233,10 @@ public final class EventsToLegs
 	@Override
 	public void handleEvent(LinkEnterEvent event) {
 		VehicleRoute route = vehicle2route.get(event.getVehicleId());
+		if (route == null) {
+			logger.warn(String.format("Could not find route for the vehicle '%s'. Event: '%s'", event.getVehicleId(), event));
+			return;
+		}
 		if (route != null) {
 			route.links.add(event.getLinkId());
 		}
@@ -307,7 +313,7 @@ public final class EventsToLegs
 
 			final TransitStopFacility egressFacility = transitSchedule.getFacilities().get(lastFacilityId);
 			assert egressFacility != null;
-			
+
 			DefaultTransitPassengerRoute passengerRoute = new DefaultTransitPassengerRoute(accessFacility, line, route, egressFacility);
 			passengerRoute.setBoardingTime(pendingTransitTravel.boardingTime);
 			passengerRoute.setTravelTime(travelTime);
