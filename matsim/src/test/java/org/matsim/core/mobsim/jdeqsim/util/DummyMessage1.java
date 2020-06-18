@@ -27,6 +27,10 @@ public class DummyMessage1 extends Message {
 
 	public Message messageToUnschedule=null;
 
+	public DummyMessage1() {
+		super(null);
+	}
+
 	@Override
 	public void handleMessage() {
 		this.getReceivingUnit().getScheduler().unschedule(messageToUnschedule);

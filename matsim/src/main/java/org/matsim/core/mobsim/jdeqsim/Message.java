@@ -28,12 +28,7 @@ import org.matsim.core.api.experimental.events.EventsManager;
  */
 public abstract class Message implements Comparable<Message> {
 
-	static EventsManager eventsManager;
-	// yyyy we have bad experiences with static non-final stuff. kai, feb'19
-
-	public static void setEventsManager(EventsManager eventsManager) {
-		Message.eventsManager = eventsManager;
-	}
+	final EventsManager eventsManager;
 
 	private double messageArrivalTime = 0;
 //	private SimUnit sendingUnit;
@@ -41,7 +36,8 @@ public abstract class Message implements Comparable<Message> {
 	protected int priority = 0;
 	private boolean isAlive = true;
 
-	public Message() {
+	public Message(EventsManager eventsManager) {
+		this.eventsManager = eventsManager;
 	}
 
 	public double getMessageArrivalTime() {

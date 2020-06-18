@@ -57,14 +57,13 @@ public class JDEQSimulation implements Mobsim {
 
 	@Inject
 	public JDEQSimulation(final JDEQSimConfigGroup config, final Scenario scenario, final EventsManager events) {
-		Message.setEventsManager(events);
 		this.config = config;
 		this.scenario = scenario;
 		this.events = events;
 		activityDurationInterpretation = scenario.getConfig().plans().getActivityDurationInterpretation();
 		scheduler = new Scheduler(new MessageQueue(), config.getSimulationEndTime().orElse(Double.MAX_VALUE));
 		this.allRoads = new HashMap<>();
-		messageFactory = new MessageFactory();
+		messageFactory = new MessageFactory(events);
 	}
 
 	@Override
