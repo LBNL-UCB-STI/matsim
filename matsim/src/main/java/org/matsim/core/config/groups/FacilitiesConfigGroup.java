@@ -42,23 +42,21 @@ public final class FacilitiesConfigGroup extends ReflectiveConfigGroup {
 	private String inputCRS = null;
 
 	// following params are required only if activitiesFacilities are generated internally (e.g., FacilitiesSource.onePerActivityLocationInPlansFile). Amit Jan'18
-	private String idPrefix = "";
-	private boolean oneFacilityPerLink = true;
-	private boolean removingLinksAndCoordinates = true;
-	private boolean assigningOpeningTime = false;
-	private boolean assigningLinksToFacilitiesIfMissing = true;
+	private String idPrefix = "autogen_";
+//	private boolean removingLinksAndCoordinates = true;
+//	private boolean assigningOpeningTime = false;
+//	private boolean assigningLinksToFacilitiesIfMissing = true;
 
 	private static final String FACILITIES_SOURCE = "facilitiesSource";
-	public enum FacilitiesSource {none, fromFile, setInScenario, onePerActivityLocationInPlansFile};
+	public enum FacilitiesSource {none, fromFile, setInScenario, onePerActivityLinkInPlansFile, onePerActivityLocationInPlansFile};
 	private FacilitiesSource facilitiesSource = FacilitiesSource.none;
-	private boolean addEmptyActivityOption = false;
+//	private boolean addEmptyActivityOption = false;
 
-	private static final String ADD_EMPTY_ACTIVITY_OPTIONS = "addEmptyActivityOption";
+//	private static final String ADD_EMPTY_ACTIVITY_OPTIONS = "addEmptyActivityOption";
 	private static final String ID_PREFIX="idPrefix";
-	private static final String ONE_FACILITY_PER_LINK="oneFacilityPerLink";
-	private static final String REMOVING_LINKS_AND_COORDINATES = "removingLinksAndCoordinates";
-	private static final String ASSIGNING_OPENING_TIME = "assigningOpeningTime";
-	private static final String ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING="assigningLinksToFacilitiesIfMissing";
+//	private static final String REMOVING_LINKS_AND_COORDINATES = "removingLinksAndCoordinates";
+//	private static final String ASSIGNING_OPENING_TIME = "assigningOpeningTime";
+//	private static final String ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING="assigningLinksToFacilitiesIfMissing";
 
 	public FacilitiesConfigGroup() {
 		super(GROUP_NAME);
@@ -81,21 +79,21 @@ public final class FacilitiesConfigGroup extends ReflectiveConfigGroup {
 			comments.put(FACILITIES_SOURCE, "This defines how facilities should be created. Possible values: "+options.toString());
 		}
 
-		comments.put( ID_PREFIX, "A prefix to be used in activityFacility id.");
+		comments.put( ID_PREFIX, "A prefix to be used for auto-generated IDs.");
 
-		comments.put(ONE_FACILITY_PER_LINK, "Sets whether all activities on a link should be collected within one ActivityFacility." +
-				" Default is 'true'. If set to 'false', for each coordinate found in the population's activities a separate ActivityFacility will be created.");
+//		comments.put(ONE_FACILITY_PER_LINK, "Sets whether all activities on a link should be collected within one ActivityFacility." +
+//				" Default is 'true'. If set to 'false', for each coordinate found in the population's activities a separate ActivityFacility will be created.");
 
-		comments.put(REMOVING_LINKS_AND_COORDINATES, "If set to 'true' (which is the default), the link and coordinate attributes " +
-				"are replaced by null reference in the activities, as this information is now available via the facility.");
+//		comments.put(REMOVING_LINKS_AND_COORDINATES, "If set to 'true' (which is the default), the link and coordinate attributes " +
+//				"are replaced by null reference in the activities, as this information is now available via the facility.");
+//
+//		comments.put(ADD_EMPTY_ACTIVITY_OPTIONS, "If set to 'true', empty activity option will be created.");
+//
+//		comments.put(ASSIGNING_OPENING_TIME, "If set to 'true', opening time will be assigned to activity facilities from ActivityParams. Default is false. This will NOT override option 'addEmptyActivityOption'.");
 
-		comments.put(ADD_EMPTY_ACTIVITY_OPTIONS, "If set to 'true', empty activity option will be created.");
-
-		comments.put(ASSIGNING_OPENING_TIME, "If set to 'true', opening time will be assigned to activity facilities from ActivityParams. Default is false. This will NOT override option 'addEmptyActivityOption'.");
-
-		comments.put(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING, "Default is 'true'. In the case that a facility has no link assigned, the ActivityFacility can be assigned to the closest link." +
-				" If there should be only one ActivityFacility per link and if no link-assignment should be done, set to 'false'." +
-				"This will create a new ActivityFacility at the coordinate and the facility will not be assigned to a link.");
+//		comments.put(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING, "Default is 'true'. In the case that a facility has no link assigned, the ActivityFacility can be assigned to the closest link." +
+//				" If there should be only one ActivityFacility per link and if no link-assignment should be done, set to 'false'." +
+//				"This will create a new ActivityFacility at the coordinate and the facility will not be assigned to a link.");
 		return comments;
 	}
 
@@ -115,11 +113,13 @@ public final class FacilitiesConfigGroup extends ReflectiveConfigGroup {
 	}
 
 	@StringGetter( INPUT_FACILITY_ATTRIBUTES_FILE )
+	@Deprecated // I think that this should be phased out; use Attributes inside each facility.  kai, mar'19
 	public String getInputFacilitiesAttributesFile() {
 		return this.inputFacilitiesAttributesFile;
 	}
 
 	@StringSetter( INPUT_FACILITY_ATTRIBUTES_FILE )
+	@Deprecated // I think that this should be phased out; use Attributes inside each facility.  kai, mar'19
 	public void setInputFacilitiesAttributesFile(String inputFacilitiesAttributesFile) {
 		this.inputFacilitiesAttributesFile = inputFacilitiesAttributesFile;
 	}
@@ -144,45 +144,45 @@ public final class FacilitiesConfigGroup extends ReflectiveConfigGroup {
 		this.idPrefix = idPrefix;
 	}
 
-	@StringGetter(ONE_FACILITY_PER_LINK)
-	public boolean isOneFacilityPerLink() {
-		return oneFacilityPerLink;
-	}
+//	@StringGetter(ONE_FACILITY_PER_LINK)
+//	public boolean isOneFacilityPerLink() {
+//		return oneFacilityPerLink;
+//	}
+//
+//	@StringSetter(ONE_FACILITY_PER_LINK)
+//	public void setOneFacilityPerLink(boolean oneFacilityPerLink) {
+//		this.oneFacilityPerLink = oneFacilityPerLink;
+//	}
 
-	@StringSetter(ONE_FACILITY_PER_LINK)
-	public void setOneFacilityPerLink(boolean oneFacilityPerLink) {
-		this.oneFacilityPerLink = oneFacilityPerLink;
-	}
+//	@StringGetter(REMOVING_LINKS_AND_COORDINATES)
+//	public boolean isRemovingLinksAndCoordinates() {
+//		return removingLinksAndCoordinates;
+//	}
 
-	@StringGetter(REMOVING_LINKS_AND_COORDINATES)
-	public boolean isRemovingLinksAndCoordinates() {
-		return removingLinksAndCoordinates;
-	}
+//	@StringSetter(REMOVING_LINKS_AND_COORDINATES)
+//	public void setRemovingLinksAndCoordinates(boolean removingLinksAndCoordinates) {
+//		this.removingLinksAndCoordinates = removingLinksAndCoordinates;
+//	}
+//
+////	@StringGetter(ASSIGNING_OPENING_TIME)
+//	public boolean isAssigningOpeningTime() {
+//		return assigningOpeningTime;
+//	}
+//
+////	@StringSetter(ASSIGNING_OPENING_TIME)
+//	public void setAssigningOpeningTime(boolean assigningOpeningTime) {
+//		this.assigningOpeningTime = assigningOpeningTime;
+//	}
 
-	@StringSetter(REMOVING_LINKS_AND_COORDINATES)
-	public void setRemovingLinksAndCoordinates(boolean removingLinksAndCoordinates) {
-		this.removingLinksAndCoordinates = removingLinksAndCoordinates;
-	}
+//	@StringGetter(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING)
+//	public boolean isAssigningLinksToFacilitiesIfMissing() {
+//		return assigningLinksToFacilitiesIfMissing;
+//	}
 
-	@StringGetter(ASSIGNING_OPENING_TIME)
-	public boolean isAssigningOpeningTime() {
-		return assigningOpeningTime;
-	}
-
-	@StringSetter(ASSIGNING_OPENING_TIME)
-	public void setAssigningOpeningTime(boolean assigningOpeningTime) {
-		this.assigningOpeningTime = assigningOpeningTime;
-	}
-
-	@StringGetter(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING)
-	public boolean isAssigningLinksToFacilitiesIfMissing() {
-		return assigningLinksToFacilitiesIfMissing;
-	}
-
-	@StringSetter(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING)
-	public void setAssigningLinksToFacilitiesIfMissing(boolean assigningLinksToFacilitiesIfMissing) {
-		this.assigningLinksToFacilitiesIfMissing = assigningLinksToFacilitiesIfMissing;
-	}
+//	@StringSetter(ASSIGNING_LINKS_TO_FACILITIES_IF_MISSING)
+//	public void setAssigningLinksToFacilitiesIfMissing(boolean assigningLinksToFacilitiesIfMissing) {
+//		this.assigningLinksToFacilitiesIfMissing = assigningLinksToFacilitiesIfMissing;
+//	}
 
 	@StringGetter(FACILITIES_SOURCE)
 	public FacilitiesSource getFacilitiesSource() {
@@ -194,13 +194,13 @@ public final class FacilitiesConfigGroup extends ReflectiveConfigGroup {
 		this.facilitiesSource = facilitiesSource;
 	}
 
-	@StringGetter(ADD_EMPTY_ACTIVITY_OPTIONS)
-	public boolean isAddEmptyActivityOption() {
-		return addEmptyActivityOption;
-	}
-
-	@StringSetter(ADD_EMPTY_ACTIVITY_OPTIONS)
-	public void setAddEmptyActivityOption(boolean addEmptyActivityOption) {
-		this.addEmptyActivityOption = addEmptyActivityOption;
-	}
+////	@StringGetter(ADD_EMPTY_ACTIVITY_OPTIONS)
+//	public boolean isAddEmptyActivityOption() {
+//		return addEmptyActivityOption;
+//	}
+//
+////	@StringSetter(ADD_EMPTY_ACTIVITY_OPTIONS)
+//	public void setAddEmptyActivityOption(boolean addEmptyActivityOption) {
+//		this.addEmptyActivityOption = addEmptyActivityOption;
+//	}
 }

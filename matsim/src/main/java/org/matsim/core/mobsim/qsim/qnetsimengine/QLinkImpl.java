@@ -36,8 +36,8 @@ import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.DefaultLink
 import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.LinkSpeedCalculator;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.geometry.transformations.IdentityTransformation;
-import org.matsim.lanes.vis.VisLaneModelBuilder;
-import org.matsim.lanes.vis.VisLinkWLanes;
+import org.matsim.lanes.VisLaneModelBuilder;
+import org.matsim.lanes.VisLinkWLanes;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vis.snapshotwriters.AgentSnapshotInfo;
 import org.matsim.vis.snapshotwriters.VisData;
@@ -174,11 +174,11 @@ public final class QLinkImpl extends AbstractQLink implements SignalizeableItem 
 
 	@Override public void recalcTimeVariantAttributes() {
 		double now = context.getSimTimer().getTimeOfDay() ;
-		qlane.changeUnscaledFlowCapacityPerSecond( ((Link) this.getLink()).getFlowCapacityPerSec(now) );
+		qlane.changeUnscaledFlowCapacityPerSecond( this.getLink().getFlowCapacityPerSec(now ) );
 		qlane.changeEffectiveNumberOfLanes(this.getLink().getNumberOfLanes(now));
 
 		//		qlane.changeSpeedMetersPerSecond( getLink().getFreespeed(now) ) ; flowCap & nLanes are "push", freeSpeed is
-		//"pull".  This is, however, not completely honest w.r.t. freeSpeed consequences to the fdiag, but also wasn't correctly
+		//"pull".  This is not completely honest w.r.t. freeSpeed consequences to the fdiag, but also wasn't correctly
 		//thought through/implemented when I found it.  kai, feb'18
 
 		qlane.recalcTimeVariantAttributes();

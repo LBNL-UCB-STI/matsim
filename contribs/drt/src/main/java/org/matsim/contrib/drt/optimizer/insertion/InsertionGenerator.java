@@ -22,7 +22,7 @@ package org.matsim.contrib.drt.optimizer.insertion;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.matsim.contrib.drt.data.DrtRequest;
+import org.matsim.contrib.drt.passenger.DrtRequest;
 import org.matsim.contrib.drt.optimizer.VehicleData;
 
 /**
@@ -63,6 +63,11 @@ public class InsertionGenerator {
 		public Insertion(int pickupIdx, int dropoffIdx) {
 			this.pickupIdx = pickupIdx;
 			this.dropoffIdx = dropoffIdx;
+		}
+
+		@Override
+		public String toString() {
+			return "[pickupIdx=" + pickupIdx + "][dropoffIdx=" + dropoffIdx + "]";
 		}
 	}
 

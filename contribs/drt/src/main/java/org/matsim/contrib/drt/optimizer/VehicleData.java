@@ -23,13 +23,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Collectors;
+import java.util.stream.DoubleStream;
 import java.util.stream.Stream;
 
 import org.matsim.api.core.v01.Id;
-import org.matsim.contrib.drt.data.DrtRequest;
+import org.matsim.contrib.drt.passenger.DrtRequest;
 import org.matsim.contrib.drt.schedule.DrtStopTask;
-import org.matsim.contrib.dvrp.data.Vehicle;
+import org.matsim.contrib.dvrp.fleet.DvrpVehicle;
 import org.matsim.contrib.dvrp.util.LinkTimePair;
 
 import com.google.common.collect.ImmutableList;
@@ -39,12 +42,12 @@ import com.google.common.collect.ImmutableList;
  */
 public class VehicleData {
 	public static class Entry {
-		public final Vehicle vehicle;
+		public final DvrpVehicle vehicle;
 		public final LinkTimePair start;
 		public final int startOccupancy;
 		public final ImmutableList<Stop> stops;
 
-		public Entry(Vehicle vehicle, LinkTimePair start, int startOccupancy, ImmutableList<Stop> stops) {
+		public Entry(DvrpVehicle vehicle, LinkTimePair start, int startOccupancy, ImmutableList<Stop> stops) {
 			this.vehicle = vehicle;
 			this.start = start;
 			this.startOccupancy = startOccupancy;
@@ -54,8 +57,8 @@ public class VehicleData {
 
 	public static class Stop {
 		public final DrtStopTask task;
-		public final double maxArrivalTime;// relating to max pass drive time (for dropoff requests)
-		public final double maxDepartureTime;// relating to pass max wait time (for pickup requests)
+		public final double latestArrivalTime;// relating to max passenger drive time (for dropoff requests)
+		public final double latestDepartureTime;// relating to passenger max wait time (for pickup requests)
 		public final int occupancyChange;// diff in pickups and dropoffs
 		public final int outgoingOccupancy;
 
@@ -63,31 +66,31 @@ public class VehicleData {
 			this.task = task;
 			this.outgoingOccupancy = outputOccupancy;
 
-			maxArrivalTime = calcMaxArrivalTime();
-			maxDepartureTime = calcMaxDepartureTime();
+			latestArrivalTime = calcLatestArrivalTime();
+			// essentially the min of the latest possible arrival times at this stop
+			
+			latestDepartureTime = calcLatestDepartureTime();
+			// essentially the min of the latest possible pickup times at this stop
+			
 			occupancyChange = task.getPickupRequests().size() - task.getDropoffRequests().size();
 		}
 
-		private double calcMaxArrivalTime() {
-			double maxTime = Double.MAX_VALUE;
-			for (DrtRequest r : task.getDropoffRequests()) {
-				double reqMaxArrivalTime = r.getLatestArrivalTime();
-				if (reqMaxArrivalTime < maxTime) {
-					maxTime = reqMaxArrivalTime;
-				}
-			}
-			return maxTime;
+		private double calcLatestArrivalTime() {
+			return getMaxTimeConstraint(
+					task.getDropoffRequests().stream().mapToDouble(DrtRequest::getLatestArrivalTime),
+					task.getBeginTime());
 		}
 
-		private double calcMaxDepartureTime() {
-			double maxTime = Double.MAX_VALUE;
-			for (DrtRequest r : task.getPickupRequests()) {
-				double reqMaxDepartureTime = r.getLatestStartTime();
-				if (reqMaxDepartureTime < maxTime) {
-					maxTime = reqMaxDepartureTime;
-				}
-			}
-			return maxTime;
+		private double calcLatestDepartureTime() {
+			return getMaxTimeConstraint(task.getPickupRequests().stream().mapToDouble(DrtRequest::getLatestStartTime),
+					task.getEndTime());
+		}
+
+		private double getMaxTimeConstraint(DoubleStream latestAllowedTimes, double scheduledTime) {
+			//XXX if task is already delayed beyond one or more of latestTimes, use scheduledTime as maxTime constraint
+			//thus we can still add a new request to the already scheduled stops (as no further delays are incurred)
+			//but we cannot add a new stop before the delayed task
+			return Math.max(latestAllowedTimes.min().orElse(Double.MAX_VALUE), scheduledTime);
 		}
 
 		@Override
@@ -97,21 +100,29 @@ public class VehicleData {
 	}
 
 	public interface EntryFactory {
-		Entry create(Vehicle vehicle, double currentTime);
+		Entry create(DvrpVehicle vehicle, double currentTime);
 	}
 
 	private final double currentTime;
 	private final EntryFactory entryFactory;
-	private final Map<Id<Vehicle>, Entry> entries;
+	private final Map<Id<DvrpVehicle>, Entry> entries;
 
-	public VehicleData(double currentTime, Stream<? extends Vehicle> vehicles, EntryFactory entryFactory) {
+	public VehicleData(double currentTime, Stream<? extends DvrpVehicle> vehicles, EntryFactory entryFactory,
+			ForkJoinPool forkJoinPool) {
 		this.currentTime = currentTime;
 		this.entryFactory = entryFactory;
-		entries = vehicles.map(v -> entryFactory.create(v, currentTime)).filter(Objects::nonNull)
-				.collect(Collectors.toMap(e -> e.vehicle.getId(), e -> e));
+		try {
+			entries = forkJoinPool.submit(() -> vehicles.parallel()//
+					.map(v -> entryFactory.create(v, currentTime))//
+					.filter(Objects::nonNull)//
+					.collect(Collectors.toMap(e -> e.vehicle.getId(), e -> e)))//
+					.get();
+		} catch (InterruptedException | ExecutionException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
-	public void updateEntry(Vehicle vehicle) {
+	public void updateEntry(DvrpVehicle vehicle) {
 		Entry e = entryFactory.create(vehicle, currentTime);
 		if (e != null) {
 			entries.put(vehicle.getId(), e);

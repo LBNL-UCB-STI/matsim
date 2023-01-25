@@ -39,13 +39,12 @@ import org.matsim.core.mobsim.qsim.interfaces.SignalizeableItem;
 import org.matsim.core.mobsim.qsim.pt.TransitDriverAgent;
 import org.matsim.core.mobsim.qsim.qnetsimengine.AbstractQLink.HandleTransitStopResult;
 import org.matsim.core.mobsim.qsim.qnetsimengine.QLinkImpl.LaneFactory;
-import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.DefaultLinkSpeedCalculator;
 import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.LinkSpeedCalculator;
 import org.matsim.core.mobsim.qsim.qnetsimengine.vehicleq.FIFOVehicleQ;
 import org.matsim.core.mobsim.qsim.qnetsimengine.vehicleq.PassingVehicleQ;
 import org.matsim.core.mobsim.qsim.qnetsimengine.vehicleq.VehicleQ;
 import org.matsim.core.utils.misc.Time;
-import org.matsim.lanes.data.Lane;
+import org.matsim.lanes.Lane;
 import org.matsim.vehicles.Vehicle;
 import org.matsim.vis.snapshotwriters.AgentSnapshotInfo;
 import org.matsim.vis.snapshotwriters.VisVehicle;
@@ -345,7 +344,7 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 	private void calculateStorageCapacity() {
 		// The following is not adjusted for time-dependence!! kai, apr'16
 		// No, I think that it simply assumes that the lookups are "now". kai, feb'18
-		double now = context.getSimTimer().getTimeOfDay() ;
+//		double now = context.getSimTimer().getTimeOfDay() ;
 		
 		// first guess at storageCapacity:
 		storageCapacity = this.length * this.effectiveNumberOfLanes / context.effectiveCellSize * context.qsimConfig.getStorageCapFactor() ;
@@ -368,7 +367,9 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 		if (Double.isNaN(freespeedTravelTime)) {
 			throw new IllegalStateException("Double.NaN is not a valid freespeed travel time for a link. Please check the attributes length and freespeed!");
 		}
-		double tempStorageCapacity = freespeedTravelTime * flowCapacityPerTimeStep;
+		
+		//this assumes that vehicles have the flowEfficiencyFactor of 1.0; the actual flow can be different
+		double tempStorageCapacity = freespeedTravelTime * flowCapacityPerTimeStep; 
 		// yy note: freespeedTravelTime may be Inf.  In this case, storageCapacity will also be set to Inf.  This can still be
 		// interpreted, but it means that the link will act as an infinite sink.  kai, nov'10
 
@@ -491,12 +492,16 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 			}
 
 			// Check if veh has reached destination:
-			if ((driver.isWantingToArriveOnCurrentLink())) {
-				letVehicleArrive(veh);
+			if ( driver.isWantingToArriveOnCurrentLink() ) {
+				qLink.letVehicleArrive( veh );
+
+				// remove _after_ processing the arrival to keep link active:
+				removeVehicleFromQueue( veh ) ;
+
 				continue;
 			}
 
-			/* is there still room left in the buffer? */
+			/* is there still any flow capacity left? */
 			if (!hasFlowCapacityLeft(veh) ) {
 				return;
 			}
@@ -556,15 +561,6 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 				break;
 			default: throw new RuntimeException("The traffic dynmics "+context.qsimConfig.getTrafficDynamics()+" is not implemented yet.");
 		}
-	}
-
-	private void letVehicleArrive(QVehicle veh) {
-		qLink.addParkedVehicle(veh);
-		qLink.letVehicleArrive(veh);
-		qLink.makeVehicleAvailableToNextDriver(veh);
-
-		// remove _after_ processing the arrival to keep link active:
-		removeVehicleFromQueue( veh ) ;
 	}
 
 	@Override
@@ -803,7 +799,7 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 				this.remainingHolesStorageCapacity -= veh.getSizeInEquivalents();
 				this.accumulatedInflowCap -= veh.getFlowCapacityConsumptionInEquivalents() ;
 				break;
-			default: throw new RuntimeException("The traffic dynmics "+context.qsimConfig.getTrafficDynamics()+" is not implemented yet.");
+			default: throw new RuntimeException("The traffic dynamics "+context.qsimConfig.getTrafficDynamics()+" is not implemented yet.");
 		}
 	}
 
@@ -822,6 +818,9 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 
 	@Override
 	public final QVehicle getFirstVehicle() {
+		if (this.buffer.isEmpty()) {
+			return this.vehQueue.peek();
+		}
 		return this.buffer.peek() ;
 	}
 
@@ -861,17 +860,17 @@ final class QueueWithBuffer implements QLaneI, SignalizeableItem {
 		return this.id;
 	}
 
-	static final class Hole extends QItem {
+	static final class Hole implements QItem {
 		private double earliestLinkEndTime ;
 		private double pcu;
 
 		@Override
-		final double getEarliestLinkExitTime() {
+		public final double getEarliestLinkExitTime() {
 			return earliestLinkEndTime;
 		}
 
 		@Override
-		final void setEarliestLinkExitTime(double earliestLinkEndTime) {
+		public final void setEarliestLinkExitTime( double earliestLinkEndTime ) {
 			this.earliestLinkEndTime = earliestLinkEndTime;
 		}
 

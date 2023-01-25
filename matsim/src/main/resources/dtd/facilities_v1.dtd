@@ -9,7 +9,7 @@
 
         <!-- ============================================================ -->
 
-        <!ELEMENT facilities        (facility*)>
+        <!ELEMENT facilities        (attributes?,facility*)>
         <!ATTLIST facilities
                 name              CDATA   #IMPLIED
                 aggregation_layer CDATA   #IMPLIED
@@ -18,8 +18,8 @@
         <!ELEMENT facility   (activity*,attributes?)>
         <!ATTLIST facility
                 id         CDATA #REQUIRED
-                x          CDATA #REQUIRED
-                y          CDATA #REQUIRED
+                x          CDATA #IMPLIED
+                y          CDATA #IMPLIED
                 linkId     CDATA #IMPLIED
                 desc       CDATA #IMPLIED>
 

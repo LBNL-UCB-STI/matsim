@@ -32,8 +32,8 @@ import org.matsim.core.utils.geometry.CoordUtils;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
 import org.matsim.core.utils.misc.Counter;
 import org.xml.sax.Attributes;
-import org.xml.sax.InputSource;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -47,6 +47,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Reads in an OSM-File, exported from <a href="http://openstreetmap.org/" target="_blank">OpenStreetMap</a>,
@@ -87,18 +88,18 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	private final static String TAG_HIGHWAY = "highway";
 	private final static String TAG_MAXSPEED = "maxspeed";
 	private final static String TAG_JUNCTION = "junction";
-    private final static String TAG_ONEWAY = "oneway";
-    private final static String TAG_ACCESS = "access";
+	private final static String TAG_ONEWAY = "oneway";
+	private final static String TAG_ACCESS = "access";
 	private static List<String> allTags = new LinkedList<>(Arrays.asList(TAG_LANES, TAG_LANES_FORWARD,
 			TAG_LANES_BACKWARD, TAG_HIGHWAY, TAG_MAXSPEED, TAG_JUNCTION, TAG_ONEWAY, TAG_ACCESS));
 
-	private final Map<Long, OsmNode> nodes = new HashMap<Long, OsmNode>();
-	private final Map<Long, OsmWay> ways = new HashMap<Long, OsmWay>();
-	private final Set<String> unknownHighways = new HashSet<String>();
-	private final Set<String> unknownMaxspeedTags = new HashSet<String>();
-	private final Set<String> unknownLanesTags = new HashSet<String>();
+	private final Map<Long, OsmNode> nodes = new HashMap<>();
+	private final Map<Long, OsmWay> ways = new HashMap<>();
+	private final Set<String> unknownHighways = new HashSet<>();
+	private final Set<String> unknownMaxspeedTags = new HashSet<>();
+	private final Set<String> unknownLanesTags = new HashSet<>();
 	private long id = 0;
-	protected final Map<String, OsmHighwayDefaults> highwayDefaults = new HashMap<String, OsmHighwayDefaults>();
+	protected final Map<String, OsmHighwayDefaults> highwayDefaults = new HashMap<>();
 	private final Network network;
 	private final CoordinateTransformation transform;
 	private boolean keepPaths = false;
@@ -108,7 +109,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	
 	private boolean useVspAdjustments = false; // Adjustments discussed on 2018-04-30, kn,ik,dz. apr'18 (Might become default after testing)
 	
-	/*package*/ final List<OsmFilter> hierarchyLayers = new ArrayList<OsmFilter>();
+	/*package*/ final List<OsmFilter> hierarchyLayers = new ArrayList<>();
 
 	// nodes that are definitely to be kept (e.g. for counts later)
 	private Set<Long> nodeIDsToKeep = null;
@@ -203,28 +204,29 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 * @param osmFilename
 	 * @throws UncheckedIOException
 	 */
-	public void parse(final String osmFilename) {
+	public final void parse(final String osmFilename) {
 		parse(osmFilename, null);
 	}
 
 	/**
 	 * Parses the given input stream and creates a MATSim network from the data.
+	 * We need to pass a supplier as in some cases, the stream could be parsed multiple times.
 	 *
-	 * @param stream
+	 * @param streamSupplier
 	 * @throws UncheckedIOException
 	 */
-	public void parse(final InputStream stream) throws UncheckedIOException {
-		parse(null, stream);
+	public final void parse(final Supplier<InputStream> streamSupplier) throws UncheckedIOException {
+		parse(null, streamSupplier);
 	}
 
 	/**
-	 * Either osmFilename or stream must be <code>null</code>, but not both.
+	 * Either osmFilename or streamSupplier must be <code>null</code>, but not both.
 	 *
 	 * @param osmFilename
-	 * @param stream
+	 * @param streamSupplier
 	 * @throws UncheckedIOException
 	 */
-	private void parse(final String osmFilename, final InputStream stream) throws UncheckedIOException {
+	private void parse(final String osmFilename, final Supplier<InputStream> streamSupplier) throws UncheckedIOException {
 		if(this.hierarchyLayers.isEmpty()){
 			log.warn("No hierarchy layer specified. Will convert every highway specified by setHighwayDefaults.");
 		}
@@ -234,23 +236,35 @@ public class OsmNetworkReader implements MatsimSomeReader {
 			log.info("parsing osm file first time: identifying nodes used by ways");
 			parser = new OsmXmlParser(this.nodes, this.ways, this.transform);
 			parser.enableOptimization(1);
-			if (stream != null) {
-				parser.parse(new InputSource(stream));
+			if (streamSupplier != null) {
+				try (InputStream is = streamSupplier.get()) {
+					parser.parse(is);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			} else {
 				parser.readFile(osmFilename);
 			}
 			log.info("parsing osm file second time: loading required nodes and ways");
 			parser.enableOptimization(2);
-			if (stream != null) {
-				parser.parse(new InputSource(stream));
+			if (streamSupplier != null) {
+				try (InputStream is = streamSupplier.get()) {
+					parser.parse(is);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			} else {
 				parser.readFile(osmFilename);
 			}
 			log.info("done loading data");
 		} else {
 			parser = new OsmXmlParser(this.nodes, this.ways, this.transform);
-			if (stream != null) {
-				parser.parse(new InputSource(stream));
+			if (streamSupplier!= null) {
+				try (InputStream is = streamSupplier.get()) {
+					parser.parse(is);
+				} catch (IOException e) {
+					throw new UncheckedIOException(e);
+				}
 			} else {
 				parser.readFile(osmFilename);
 			}
@@ -284,7 +298,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 *
 	 * @see <a href="http://wiki.openstreetmap.org/wiki/Map_Features#Highway">http://wiki.openstreetmap.org/wiki/Map_Features#Highway</a>
 	 */
-	public void setHighwayDefaults(final int hierarchy , final String highwayType, final double lanesPerDirection, final double freespeed, final double freespeedFactor, final double laneCapacity_vehPerHour) {
+	public final void setHighwayDefaults(final int hierarchy , final String highwayType, final double lanesPerDirection, final double freespeed, final double freespeedFactor, final double laneCapacity_vehPerHour) {
 		setHighwayDefaults(hierarchy, highwayType, lanesPerDirection, freespeed, freespeedFactor, laneCapacity_vehPerHour, false);
 	}
 
@@ -299,7 +313,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 * @param laneCapacity_vehPerHour the capacity per lane [veh/h]
 	 * @param oneway <code>true</code> to say that this road is a oneway road
 	 */
-	public void setHighwayDefaults(final int hierarchy, final String highwayType, final double lanesPerDirection, final double freespeed,
+	public final void setHighwayDefaults(final int hierarchy, final String highwayType, final double lanesPerDirection, final double freespeed,
 			final double freespeedFactor, final double laneCapacity_vehPerHour, final boolean oneway) {
         this.highwayDefaults.put(highwayType, new OsmHighwayDefaults(hierarchy, lanesPerDirection, freespeed, freespeedFactor, laneCapacity_vehPerHour, oneway));
     }
@@ -315,7 +329,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 *
 	 * @param keepPaths <code>true</code> to keep all details of the OSM roads
 	 */
-	public void setKeepPaths(final boolean keepPaths) {
+	public final void setKeepPaths(final boolean keepPaths) {
 		this.keepPaths = keepPaths;
 	}
 
@@ -328,7 +342,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 * @param scaleMaxSpeed <code>true</code> to scale the speed limit down by the value specified by the
 	 * {@link #setHighwayDefaults(int, String, double, double, double, double) defaults}.
 	 */
-	public void setScaleMaxSpeed(final boolean scaleMaxSpeed) {
+	public final void setScaleMaxSpeed(final boolean scaleMaxSpeed) {
 		this.scaleMaxSpeed = scaleMaxSpeed;
 	}
 
@@ -341,10 +355,10 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 * @param coordSEEasting The longitude of the south eastern corner of the rectangle.
 	 * @param hierarchy Layer specifying the hierarchy of the layers starting with 1 as the top layer.
 	 */
-	public void setHierarchyLayer(final double coordNWNorthing, final double coordNWEasting, final double coordSENorthing, final double coordSEEasting, final int hierarchy) {
+	public final void setHierarchyLayer(final double coordNWNorthing, final double coordNWEasting, final double coordSENorthing, final double coordSEEasting, final int hierarchy) {
 		this.hierarchyLayers.add(new OsmFilterImpl(this.transform.transform(new Coord(coordNWEasting, coordNWNorthing)), this.transform.transform(new Coord(coordSEEasting, coordSENorthing)), hierarchy));
 	}
-	public void setHierarchyLayer(final int hierarchy) {
+	public final void setHierarchyLayer(final int hierarchy) {
 		this.hierarchyLayers.add(new GeographicallyNonrestrictingOsmFilterImpl(hierarchy));
 	}
 
@@ -352,7 +366,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 * Adds a new filter to hierarchy layer.
 	 * @param osmFilter
 	 */
-	public void addOsmFilter(final OsmFilter osmFilter) {
+	public final void addOsmFilter(final OsmFilter osmFilter) {
 		this.hierarchyLayers.add(osmFilter);
 	}
 
@@ -363,11 +377,11 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	 *
 	 * @param memoryEnabled
 	 */
-	public void setMemoryOptimization(final boolean memoryEnabled) {
+	public final void setMemoryOptimization(final boolean memoryEnabled) {
 		this.slowButLowMemory = memoryEnabled;
 	}
 	
-	public void setNodeIDsToKeep(Set<Long> nodeIDsToKeep){
+	public final void setNodeIDsToKeep(Set<Long> nodeIDsToKeep){
 		if(nodeIDsToKeep != null && !nodeIDsToKeep.isEmpty()){
 			this.nodeIDsToKeep = nodeIDsToKeep;
 		}
@@ -836,8 +850,8 @@ public class OsmNetworkReader implements MatsimSomeReader {
 
 	protected static class OsmWay {
 		public final long id;
-		public final List<Long> nodes = new ArrayList<Long>(4);
-		public final Map<String, String> tags = new HashMap<String, String>(4);
+		public final List<Long> nodes = new ArrayList<>(4);
+		public final Map<String, String> tags = new HashMap<>(4);
 		public int hierarchy = -1;
 
 		public OsmWay(final long id) {
@@ -983,7 +997,7 @@ public class OsmNetworkReader implements MatsimSomeReader {
 	}
 
 	private static class StringCache {
-		private static ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<String, String>(10000);
+		private static ConcurrentHashMap<String, String> cache = new ConcurrentHashMap<>(10000);
 		
 		/**
 		 * Returns the cached version of the given String. If the strings was

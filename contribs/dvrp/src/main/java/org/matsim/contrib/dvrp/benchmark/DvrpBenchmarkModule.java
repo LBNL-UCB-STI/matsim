@@ -18,45 +18,40 @@
 
 package org.matsim.contrib.dvrp.benchmark;
 
-import java.util.Collection;
-import java.util.function.Function;
-
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.contrib.dvrp.router.DvrpRoutingNetworkProvider;
-import org.matsim.contrib.dvrp.run.DvrpQSimPluginsProvider;
-import org.matsim.contrib.dvrp.run.DvrpQSimPluginsProvider.DvrpQSimPluginsProviderFactory;
-import org.matsim.core.config.Config;
+import org.matsim.contrib.dvrp.run.MobsimTimerProvider;
+import org.matsim.contrib.dvrp.vrpagent.VrpAgentSourceQSimModule;
+import org.matsim.contrib.dynagent.run.DynActivityEngineModule;
 import org.matsim.core.controler.AbstractModule;
-import org.matsim.core.mobsim.framework.listeners.MobsimListener;
-import org.matsim.core.mobsim.qsim.AbstractQSimPlugin;
+import org.matsim.core.mobsim.framework.MobsimTimer;
+import org.matsim.core.mobsim.qsim.AbstractQSimModule;
+import org.matsim.vehicles.VehicleType;
+import org.matsim.vehicles.VehicleUtils;
 
-import com.google.inject.Module;
-import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
 /**
  * @author michalm
  */
 public class DvrpBenchmarkModule extends AbstractModule {
-	private final DvrpQSimPluginsProviderFactory qSimPluginProviderFactory;
-
-	public DvrpBenchmarkModule(Function<Config, Module> moduleCreator,
-			Collection<Class<? extends MobsimListener>> listeners) {
-		this(config -> new DvrpQSimPluginsProvider(config, moduleCreator).addListeners(listeners));
-	}
-
-	public DvrpBenchmarkModule(DvrpQSimPluginsProviderFactory qSimPluginProviderFactory) {
-		this.qSimPluginProviderFactory = qSimPluginProviderFactory;
-	}
-
 	@Override
 	public void install() {
+		bind(VehicleType.class).annotatedWith(Names.named(VrpAgentSourceQSimModule.DVRP_VEHICLE_TYPE))
+				.toInstance(VehicleUtils.getDefaultVehicleType());
+
 		install(new DvrpBenchmarkTravelTimeModule());// fixed travel times
 
 		bind(Network.class).annotatedWith(Names.named(DvrpRoutingNetworkProvider.DVRP_ROUTING))
-				.toProvider(DvrpRoutingNetworkProvider.class).asEagerSingleton();
+				.toProvider(DvrpRoutingNetworkProvider.class)
+				.asEagerSingleton();
 
-		bind(new TypeLiteral<Collection<AbstractQSimPlugin>>() {})
-				.toProvider(qSimPluginProviderFactory.create(getConfig()));
+		installQSimModule(new DynActivityEngineModule());
+		installQSimModule(new AbstractQSimModule() {
+			@Override
+			protected void configureQSim() {
+				bind(MobsimTimer.class).toProvider(MobsimTimerProvider.class).asEagerSingleton();
+			}
+		});
 	}
 }

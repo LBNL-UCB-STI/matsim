@@ -21,6 +21,7 @@
 
 package org.matsim.contrib.pseudosimulation;
 
+import com.google.inject.Singleton;
 import org.matsim.api.core.v01.Scenario;
 import org.matsim.contrib.eventsBasedPTRouter.TransitRouterEventsWSFactory;
 import org.matsim.contrib.eventsBasedPTRouter.stopStopTimes.StopStopTime;
@@ -40,6 +41,7 @@ import org.matsim.core.config.ConfigUtils;
 import org.matsim.core.controler.AbstractModule;
 import org.matsim.core.controler.Controler;
 import org.matsim.core.controler.MatsimServices;
+import org.matsim.core.mobsim.qsim.QSimProvider;
 import org.matsim.core.router.util.TravelTime;
 import org.matsim.core.scenario.ScenarioUtils;
 import org.matsim.core.trafficmonitoring.TravelTimeCalculator;
@@ -84,11 +86,17 @@ public class RunPSim {
 				bind(WaitTime.class).toProvider(PSimWaitTimeCalculator.class);
 				bind(StopStopTimeCalculator.class).to(PSimStopStopTimeCalculator.class);
 				bind(StopStopTime.class).toProvider(PSimStopStopTimeCalculator.class);
-				bind(TravelTimeCalculator.class).to(PSimTravelTimeCalculator.class);
+
+//				bind(TravelTimeCalculator.class).to(PSimTravelTimeCalculator.class);
+				// I made TravelTimeCalculator final, so PSimTravelTimeCalculator can no longer inherit from it.  The following statement binds PSimTravelTimeCalculator
+				// directly.  I am not even sure if that is necessary.  Pls let me know if you get stuck and I will try to help.  kai, feb'19
+
+				bind(PSimTravelTimeCalculator.class).in( Singleton.class ) ;
 				bind(TravelTime.class).toProvider(PSimTravelTimeCalculator.class);
 				bind(TransitRouter.class).toProvider(TransitRouterEventsWSFactory.class);
 				bind(PlanCatcher.class).toInstance(new PlanCatcher());
 				bind(PSimProvider.class).toInstance(new PSimProvider(scenario,matsimControler.getEvents()));
+				bind(QSimProvider.class);
 			}
 		});
 

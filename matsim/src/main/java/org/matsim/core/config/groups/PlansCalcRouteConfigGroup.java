@@ -29,10 +29,7 @@ import org.matsim.core.config.ReflectiveConfigGroup.StringGetter;
 import org.matsim.core.config.ReflectiveConfigGroup.StringSetter;
 import org.matsim.core.utils.collections.CollectionUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Config Module for PlansCalcRoute class.
@@ -65,7 +62,7 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 	
 	private static final Logger log = Logger.getLogger(PlansCalcRouteConfigGroup.class) ;
 	
-	private Collection<String> networkModes = Arrays.asList(TransportMode.car);
+	private Collection<String> networkModes = Collections.singletonList( TransportMode.car );
 
 	private boolean acceptModeParamsWithoutClearing = false;
 	
@@ -82,7 +79,9 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 
 	public static class ModeRoutingParams extends ReflectiveConfigGroup implements MatsimParameters {
 		public static final String SET_TYPE = "teleportedModeParameters";
-
+		public static final String MODE = "mode";
+		public static final String TELEPORTED_MODE_FREESPEED_FACTOR = "teleportedModeFreespeedFactor";
+		
 		private String mode = null;
 
 		// beeline teleportation:
@@ -131,7 +130,7 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 			map.put( "teleportedModeSpeed" ,
 					"Speed for a teleported mode. " +
 					"Travel time = (<beeline distance> * beelineDistanceFactor) / teleportedModeSpeed. Insert a line like this for every such mode.");
-			map.put( "teleportedModeFreespeedFactor", TELEPORTED_MODE_FREESPEED_FACTOR_CMT);
+			map.put( TELEPORTED_MODE_FREESPEED_FACTOR, TELEPORTED_MODE_FREESPEED_FACTOR_CMT);
 
 			return map;
 		}
@@ -154,12 +153,12 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 			this.teleportedModeFreespeedLimit = teleportedModeFreespeedLimit;
 		}
 
-		@StringGetter( "mode" )
+		@StringGetter(MODE)
 		public String getMode() {
 			return mode;
 		}
 
-		@StringSetter( "mode" )
+		@StringSetter(MODE)
 		public void setMode(String mode) {
 			testForLocked() ;
 			this.mode = mode;
@@ -178,13 +177,19 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 			}
 			this.teleportedModeSpeed = teleportedModeSpeed;
 		}
-
-		@StringGetter( "teleportedModeFreespeedFactor" )
+		
+		/**
+		 * @return {@value #TELEPORTED_MODE_FREESPEED_FACTOR_CMT}
+		 */
+		@StringGetter(TELEPORTED_MODE_FREESPEED_FACTOR)
 		public Double getTeleportedModeFreespeedFactor() {
 			return teleportedModeFreespeedFactor;
 		}
-
-		@StringSetter( "teleportedModeFreespeedFactor" )
+		
+		/**
+		 * @param teleportedModeFreespeedFactor -- {@value #TELEPORTED_MODE_FREESPEED_FACTOR_CMT}
+		 */
+		@StringSetter(TELEPORTED_MODE_FREESPEED_FACTOR)
 		public void setTeleportedModeFreespeedFactor(
 				Double teleportedModeFreespeedFactor) {
 			testForLocked() ;
@@ -516,6 +521,7 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 
 	@Override protected void checkConsistency(Config config) {
 		super.checkConsistency(config);
+
 //		if ( this.insertingAccessEgressWalk ) {
 //			// we need scoring parameters for each resulting interaction activity
 //			for ( String mode : this.getNetworkModes() ) {
@@ -531,5 +537,23 @@ public final class PlansCalcRouteConfigGroup extends ConfigGroup {
 		// these are now added in the config consistency checker of PlanCalcScoreConfigGroup,
 		// so there is no point in checking here since the checker here might be called
 		// earlier. kai, jan'18
+
+		Set<String> modesRoutedAsTeleportation = this.getModeRoutingParams().keySet();
+		Collection<String> modesRoutedAsNetworkModes = this.getNetworkModes();
+
+		for( String mode : modesRoutedAsTeleportation ){
+			if ( modesRoutedAsNetworkModes.contains( mode ) ) {
+				throw new RuntimeException( "mode \"" + mode + "\" is defined both as teleportation (mode routing param) and for network routing.  You need to remove " +
+										"one or the other.") ;
+			}
+		}
+
 	}
+
+	public void printModeRoutingParams(){
+		for( Map.Entry<String, PlansCalcRouteConfigGroup.ModeRoutingParams> entry : this.getModeRoutingParams().entrySet() ){
+			log.warn( "key=" + entry.getKey() + "; value=" + entry.getValue() );
+		}
+	}
+
 }

@@ -20,7 +20,6 @@
 package org.matsim.contrib.dvrp.vrpagent;
 
 import org.matsim.api.core.v01.Id;
-import org.matsim.api.core.v01.TransportMode;
 import org.matsim.api.core.v01.network.Link;
 import org.matsim.contrib.dvrp.path.DivertedVrpPath;
 import org.matsim.contrib.dvrp.path.VrpPath;
@@ -39,9 +38,10 @@ public class VrpLeg implements DivertibleLeg {
 	private int currentLinkIdx = 0;
 	private boolean askedAboutNextLink = false;
 
-	private final String mode = TransportMode.car;// TODO
+	private final String mode;
 
-	public VrpLeg(VrpPath path) {
+	public VrpLeg(String mode, VrpPath path) {
+		this.mode = mode;
 		this.path = path;
 	}
 
@@ -106,10 +106,6 @@ public class VrpLeg implements DivertibleLeg {
 	@Override
 	public Id<Link> getDestinationLinkId() {
 		return path.getToLink().getId();
-	}
-
-	@Override
-	public void finalizeAction(double now) {
 	}
 
 	@Override

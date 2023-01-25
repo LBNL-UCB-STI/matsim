@@ -33,9 +33,8 @@ import org.matsim.facilities.ActivityFacilities;
 import org.matsim.facilities.ActivityFacilitiesImpl;
 import org.matsim.households.Households;
 import org.matsim.households.HouseholdsImpl;
-import org.matsim.lanes.data.Lanes;
-import org.matsim.lanes.data.LanesImpl;
-import org.matsim.lanes.data.LanesUtils;
+import org.matsim.lanes.Lanes;
+import org.matsim.lanes.LanesUtils;
 import org.matsim.pt.transitSchedule.TransitScheduleFactoryImpl;
 import org.matsim.pt.transitSchedule.api.TransitSchedule;
 import org.matsim.vehicles.VehicleUtils;
@@ -68,18 +67,24 @@ public final class MutableScenario implements Scenario, Lockable {
 
 	private Vehicles vehicles ;
 
-	MutableScenario(Config config) {
+	MutableScenario(Config config, boolean buildInternalObjects) {
 		this.config = config;
-		this.network = NetworkUtils.createNetwork(this.config);
-		this.population = PopulationUtils.createPopulation(this.config, this.network);
-		this.facilities = new ActivityFacilitiesImpl();
-		this.households = new HouseholdsImpl();
-		this.lanes = LanesUtils.createLanesContainer();
-		this.vehicles = VehicleUtils.createVehiclesContainer();
-		this.transitVehicles = VehicleUtils.createVehiclesContainer();
-		this.transitSchedule = new TransitScheduleFactoryImpl().createTransitSchedule();
-		
-		this.config.network().setLocked();
+		if (buildInternalObjects) {
+			this.network = NetworkUtils.createNetwork(this.config);
+			this.population = PopulationUtils.createPopulation(this.config, this.network);
+			this.facilities = new ActivityFacilitiesImpl();
+			this.households = new HouseholdsImpl();
+			this.lanes = LanesUtils.createLanesContainer();
+			this.vehicles = VehicleUtils.createVehiclesContainer();
+			this.transitVehicles = VehicleUtils.createVehiclesContainer();
+			this.transitSchedule = new TransitScheduleFactoryImpl().createTransitSchedule();
+
+			this.config.network().setLocked();
+		}
+	}
+
+	MutableScenario(Config config) {
+		this(config, true);
 	}
 
 	@Override

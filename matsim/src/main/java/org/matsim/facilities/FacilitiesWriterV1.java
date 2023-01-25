@@ -23,7 +23,6 @@ package org.matsim.facilities;
 import org.matsim.api.core.v01.Coord;
 import org.matsim.core.api.internal.MatsimWriter;
 import org.matsim.core.utils.geometry.CoordinateTransformation;
-import org.matsim.core.utils.geometry.transformations.IdentityTransformation;
 import org.matsim.core.utils.io.MatsimXmlWriter;
 import org.matsim.core.utils.misc.Time;
 import org.matsim.utils.objectattributes.AttributeConverter;
@@ -31,6 +30,7 @@ import org.matsim.utils.objectattributes.attributable.AttributesXmlWriterDelegat
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.SortedSet;
@@ -48,10 +48,6 @@ import java.util.SortedSet;
 
     private AttributesXmlWriterDelegate attributesWriter = new AttributesXmlWriterDelegate();
 
-    public FacilitiesWriterV1(final ActivityFacilities facilities) {
-        this(new IdentityTransformation(), facilities);
-    }
-
     public FacilitiesWriterV1(
             final CoordinateTransformation coordinateTransformation,
             final ActivityFacilities facilities) {
@@ -61,16 +57,25 @@ import java.util.SortedSet;
 
     @Override
     public void write(String filename) {
-        this.writeOpenAndInit(filename);
+        openFile(filename);
+        this.writeInit();
         for (ActivityFacility f : FacilitiesUtils.getSortedFacilities(this.facilities).values()) {
             this.writeFacility((ActivityFacilityImpl) f);
         }
         this.writeFinish();
     }
 
-    private final void writeOpenAndInit(final String filename) {
+    public void write(OutputStream stream) {
+        openOutputStream(stream);
+        this.writeInit();
+        for (ActivityFacility f : FacilitiesUtils.getSortedFacilities(this.facilities).values()) {
+            this.writeFacility((ActivityFacilityImpl) f);
+        }
+        this.writeFinish();
+    }
+
+    private final void writeInit() {
         try {
-            openFile(filename);
             this.writeXmlHead();
             this.writeDoctype("facilities", DTD);
             this.startFacilities(this.facilities, this.writer);
@@ -98,6 +103,7 @@ import java.util.SortedSet;
                 }
                 this.endActivity(this.writer);
             }
+						this.attributesWriter.writeAttributes("\t\t", this.writer, f.getAttributes());
             this.endFacility(this.writer);
             this.writeSeparator(this.writer);
             this.writer.flush();
@@ -126,6 +132,7 @@ import java.util.SortedSet;
             out.write(" name=\"" + facilities.getName() + "\"");
         }
         out.write(">\n\n");
+        this.attributesWriter.writeAttributes("\t", out, facilities.getAttributes());
     }
 
 
@@ -143,14 +150,15 @@ import java.util.SortedSet;
         if (facility.getLinkId() != null) {
             out.write(" linkId=\"" + facility.getLinkId().toString() + "\"");
         }
-        final Coord coord = coordinateTransformation.transform(facility.getCoord());
-        out.write(" x=\"" + coord.getX() + "\"");
-        out.write(" y=\"" + coord.getY() + "\"");
+        if (facility.getCoord()!=null) {
+            final Coord coord = coordinateTransformation.transform(facility.getCoord());
+            out.write(" x=\"" + coord.getX() + "\"");
+            out.write(" y=\"" + coord.getY() + "\"");
+        }
         if (facility.getDesc() != null) {
             out.write(" desc=\"" + facility.getDesc() + "\"");
         }
         out.write(">\n");
-        this.attributesWriter.writeAttributes("\t\t", out, facility.getAttributes());
     }
 
     public void endFacility(final BufferedWriter out) throws IOException {

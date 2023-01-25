@@ -37,10 +37,10 @@ public class RunOneSharedTaxiExample {
 				new OTFVisConfigGroup());
 		config.controler().setLastIteration(lastIteration);
 		config.controler().setWriteEventsInterval(lastIteration);
-		DrtControlerCreator.createControler(config, otfvis).run();
+		DrtControlerCreator.createControlerWithSingleModeDrt(config, otfvis).run();
 	}
 
 	public static void main(String[] args) {
-		run(false, 0); // switch to 'true' to turn on visualisation
+		run(false, 2); // switch to 'true' to turn on visualisation
 	}
 }

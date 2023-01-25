@@ -30,20 +30,18 @@ import org.matsim.core.config.groups.QSimConfigGroup;
 import org.matsim.core.mobsim.framework.MobsimTimer;
 import org.matsim.core.mobsim.qsim.interfaces.AgentCounter;
 import org.matsim.core.mobsim.qsim.qnetsimengine.QNetsimEngine.NetsimInternalInterface;
-import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.DefaultLinkSpeedCalculator;
-import org.matsim.core.mobsim.qsim.qnetsimengine.linkspeedcalculator.LinkSpeedCalculator;
-import org.matsim.lanes.data.ModelLane;
-import org.matsim.lanes.data.Lanes;
-import org.matsim.lanes.data.LanesToLinkAssignment;
+import org.matsim.lanes.ModelLane;
+import org.matsim.lanes.Lanes;
+import org.matsim.lanes.LanesToLinkAssignment;
 import org.matsim.vis.snapshotwriters.SnapshotLinkWidthCalculator;
-import org.matsim.lanes.data.LanesUtils;
+import org.matsim.lanes.LanesUtils;
 
 import java.util.List;
 
 import javax.inject.Inject;
 
 
-public class QLanesNetworkFactory extends QNetworkFactory {
+public final class QLanesNetworkFactory implements QNetworkFactory {
 
 	private Lanes laneDefinitions;
 	
@@ -72,7 +70,7 @@ public class QLanesNetworkFactory extends QNetworkFactory {
 	}
 
 	@Override
-	void initializeFactory(AgentCounter agentCounter, MobsimTimer mobsimTimer, NetsimInternalInterface netsimEngine1) {
+	public void initializeFactory( AgentCounter agentCounter, MobsimTimer mobsimTimer, NetsimInternalInterface netsimEngine1 ) {
 		this.netsimEngine = netsimEngine1 ;
 		double effectiveCellSize = network.getEffectiveCellSize() ;
 		SnapshotLinkWidthCalculator linkWidthCalculator = new SnapshotLinkWidthCalculator();
