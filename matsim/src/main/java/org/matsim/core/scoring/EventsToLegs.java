@@ -185,6 +185,9 @@ public final class EventsToLegs
 	public void handleEvent(PersonDepartureEvent event) {
 		Leg leg = PopulationUtils.createLeg(event.getLegMode());
 		leg.setDepartureTime(event.getTime());
+		if (event.getAttributes().containsKey("tripId")) {
+			leg.getAttributes().putAttribute("trip_id", event.getAttributes().get("tripId"));
+		}
 		legs.put(event.getPersonId(), leg);
 
 		List<Id<Link>> route = new ArrayList<>();
