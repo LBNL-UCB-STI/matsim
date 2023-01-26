@@ -357,12 +357,6 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.matsim</groupId>
-			<artifactId>matsim-examples</artifactId>
-            <version>12.0-2020w02-avoev.0</version>
-			<scope>test</scope>
-		</dependency>
-		<dependency>
 			<groupId>org.jfree</groupId>
 			<artifactId>jcommon</artifactId>
 			<version>1.0.23</version>
