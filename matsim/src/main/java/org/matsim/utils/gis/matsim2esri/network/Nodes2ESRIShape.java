@@ -25,7 +25,7 @@ import java.util.Collection;
 import org.apache.log4j.Logger;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
-import org.locationtech.jts.geom.Point;
+import com.vividsolutions.jts.geom.Point;
 import org.matsim.api.core.v01.network.Network;
 import org.matsim.api.core.v01.network.Node;
 import org.matsim.core.config.ConfigUtils;

@@ -70,7 +70,11 @@ public class LegHistogram implements PersonDepartureEventHandler, PersonArrivalE
 
 	public LegHistogram(Population population, EventsManager eventsManager, int binSize, int nofBins) {
 		this(binSize, nofBins);
-		this.population = population;
+		if (population == null) {
+			this.personIds = null;
+		} else {
+			this.personIds = population.getPersons().keySet();
+		}
 		eventsManager.addHandler(this);
 	}
 
