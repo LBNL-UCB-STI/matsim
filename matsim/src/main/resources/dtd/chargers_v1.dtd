@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- ============================================================ -->
+
+<!-- For further information or questions, please contact
+     Michal Maciejewski, maciejewski at vsp dot tu-berlin dot de -->
+
+<!-- ============================================================ -->
+
+<!ELEMENT chargers (charger)*>
+
+<!ELEMENT charger EMPTY>
+
+<!ATTLIST charger
+	id       CDATA   #REQUIRED
+	link     CDATA   #REQUIRED
+		power    CDATA   #REQUIRED
+		capacity CDATA   #REQUIRED
+		type     CDATA   #IMPLIED >
