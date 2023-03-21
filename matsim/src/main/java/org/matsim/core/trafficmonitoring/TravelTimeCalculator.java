@@ -68,7 +68,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author dgrether
  * @author mrieser
  */
-public final class TravelTimeCalculator implements LinkEnterEventHandler, LinkLeaveEventHandler,
+public class TravelTimeCalculator implements LinkEnterEventHandler, LinkLeaveEventHandler,
 									     VehicleEntersTrafficEventHandler, VehicleLeavesTrafficEventHandler, VehicleArrivesAtFacilityEventHandler,
 									     VehicleAbortsEventHandler {
 	private static final Logger log = Logger.getLogger(TravelTimeCalculator.class);
@@ -366,7 +366,7 @@ public final class TravelTimeCalculator implements LinkEnterEventHandler, LinkLe
 	 * increases the router performance by 20-30%!
 	 * cdobler, aug'17
 	 */
-	private double getLinkTravelTime(final Link link, final double time) {
+	protected double getLinkTravelTime(final Link link, final double time) {
 		if (this.calculateLinkTravelTimes) {
 
 			TravelTimeData data = this.dataContainerProvider.getTravelTimeData(link, true);
@@ -407,7 +407,7 @@ public final class TravelTimeCalculator implements LinkEnterEventHandler, LinkLe
 								    "if calculation is switched off by config option!");
 	}
 
-	private double getLinkToLinkTravelTime(final Id<Link> fromLinkId, final Id<Link> toLinkId, double time) {
+	protected double getLinkToLinkTravelTime(final Id<Link> fromLinkId, final Id<Link> toLinkId, double time) {
 		if (!this.calculateLinkToLinkTravelTimes) {
 			throw new IllegalStateException("No link to link travel time is available " +
 									    "if calculation is switched off by config option!");
