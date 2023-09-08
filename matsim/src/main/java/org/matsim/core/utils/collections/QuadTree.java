@@ -621,10 +621,8 @@ public class QuadTree<T> implements Serializable {
 			for (Leaf<T> l : this.leaves) {
 				if (l.x == leaf.x && l.y == leaf.y) {
 					if (leaf.value.equals(l.value)) {
-						if(leaf != l.value){
+						if(leaf != l.value)
 							l.value = leaf.value;
-							return true;
-						}
 						return false;
 					}
 					if (l.values != null) {
