@@ -662,7 +662,7 @@ public class QuadTree<T> implements Serializable {
 			if (this.leaves != null) {
 				for (Leaf<T> leaf : this.leaves) {
 					if (leaf.x == x && leaf.y == y) {
-						if (leaf.value.equals(value)) {
+						if (leaf.value != null && leaf.value.equals(value)) {
 							leaf.value = null;
 							this.leaves.remove(leaf);
 							return true;
