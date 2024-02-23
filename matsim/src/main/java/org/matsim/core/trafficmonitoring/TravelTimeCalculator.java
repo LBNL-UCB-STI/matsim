@@ -224,7 +224,7 @@ public class TravelTimeCalculator implements LinkEnterEventHandler, LinkLeaveEve
 
 	}
 
-	private TravelTimeCalculator(final Network network, final int timeslice, final int maxTime,
+	public TravelTimeCalculator(final Network network, final int timeslice, final int maxTime,
 				   boolean calculateLinkTravelTimes, boolean calculateLinkToLinkTravelTimes, boolean filterModes, Set<String> analyzedModes) {
 		this.calculateLinkTravelTimes = calculateLinkTravelTimes;
 		this.calculateLinkToLinkTravelTimes = calculateLinkToLinkTravelTimes;
