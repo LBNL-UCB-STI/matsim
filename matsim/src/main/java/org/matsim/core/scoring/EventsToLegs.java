@@ -330,6 +330,9 @@ public final class EventsToLegs
 			if (traveledLinks.isEmpty()) {//special case: enter and leave vehicle without entering traffic
 				route = RouteUtils.createGenericRouteImpl(experiencedRoute.get(0), event.getLinkId());
 				route.setDistance(0.0);
+			} else if (Integer.parseInt(traveledLinks.get(0).toString()) < 0) {
+				route = RouteUtils.createGenericRouteImpl(experiencedRoute.get(0), event.getLinkId());
+				route.setDistance(0.0);
 			} else {
 				route = RouteUtils.createNetworkRoute(traveledLinks, null);
 				double relPosOnDepartureLink = pendingVehicleTravel.relativePositionOnDepartureLink;
