@@ -49,6 +49,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Converts a stream of Events into a stream of Legs. Passes Legs to a single LegHandler which must be registered with this class.
@@ -327,10 +328,30 @@ public final class EventsToLegs
 			List<Id<Link>> traveledLinks = vehicleRoute.links.subList(pendingVehicleTravel.accessLinkIdx,
 					vehicleRoute.links.size());
 			Route route;
+			if (!traveledLinks.isEmpty()) {
+				Id<Link> startLinkId = traveledLinks.get(0);
+				Id<Link> endLinkId = traveledLinks.get(traveledLinks.size() - 1);
+				if (network.getLinks().get(startLinkId) == null || network.getLinks().get(endLinkId) == null) {
+					// Filter out null links
+					// In principle we aren't supposed to have nonexistent links in network. However, in BEAM we
+					// use (optionally) a second network in directory2 without buses links to force router to choose
+					// trains this seems to cause some links to not be in the default network for some reason I don't
+					// understand. Since this is a rare bug, we chose to ignore those links for now and instead we
+					// throw a warning in case the issue becomes major.
+					logger.warn("One these links [start:"+startLinkId.toString()+",end:"+endLinkId.toString()+"] has " +
+							"not been found in the default network. We ignore the link(s) since they might be due to a " +
+							"second network in directory2 without bus links and run by a second router instance in BEAM. " +
+							"If too many warnings are observed (i.e. thousands of nonexistent links) they might be " +
+							"symptoms of a major problem and it needs to be addressed!");
+					traveledLinks = traveledLinks.stream()
+							.filter(linkId -> network.getLinks().get(linkId) != null)
+							.collect(Collectors.toList());
+				}
+			}
 			if (traveledLinks.isEmpty()) {//special case: enter and leave vehicle without entering traffic
 				route = RouteUtils.createGenericRouteImpl(experiencedRoute.get(0), event.getLinkId());
 				route.setDistance(0.0);
-			} else if (Integer.parseInt(traveledLinks.get(0).toString()) < 0) {
+			} else if (Integer.parseInt(traveledLinks.get(0).toString()) < 0) {//special case: in BEAM we use negative links to ignore route construction
 				route = RouteUtils.createGenericRouteImpl(experiencedRoute.get(0), event.getLinkId());
 				route.setDistance(0.0);
 			} else {
