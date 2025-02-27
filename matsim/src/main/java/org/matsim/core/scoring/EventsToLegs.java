@@ -331,7 +331,22 @@ public final class EventsToLegs
 			if (!traveledLinks.isEmpty()) {
 				Id<Link> startLinkId = traveledLinks.get(0);
 				Id<Link> endLinkId = traveledLinks.get(traveledLinks.size() - 1);
-				if (network.getLinks().get(startLinkId) == null || network.getLinks().get(endLinkId) == null) {
+				boolean startLinkIsNegative = false;
+				boolean endLinkIsNegative = false;
+
+				try {
+					startLinkIsNegative = Integer.parseInt(startLinkId.toString()) < 0;
+				} catch (NumberFormatException e) {
+					// Not a numeric ID, so it's not a negative link
+				}
+
+				try {
+					endLinkIsNegative = Integer.parseInt(endLinkId.toString()) < 0;
+				} catch (NumberFormatException e) {
+					// Not a numeric ID, so it's not a negative link
+				}
+				if ((network.getLinks().get(startLinkId) == null || network.getLinks().get(endLinkId) == null)
+						&& !startLinkIsNegative && !endLinkIsNegative) {
 					// Filter out null links
 					// In principle we aren't supposed to have nonexistent links in network. However, in BEAM we
 					// use (optionally) a second network in directory2 without buses links to force router to choose
