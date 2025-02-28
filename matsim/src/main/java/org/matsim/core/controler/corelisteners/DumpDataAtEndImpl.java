@@ -116,6 +116,11 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
 
 	@Override
 	public void notifyShutdown(ShutdownEvent event) {
+		// Call the other method with a default value
+		notifyShutdown(event, false);
+	}
+
+	public void notifyShutdown(ShutdownEvent event, boolean isBeforeFirstIteration) {
 		if ( event.isUnexpected() ) {
 			return ;
 		}
@@ -133,15 +138,15 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
 		dumpCounts();
 
 		if (!event.isUnexpected() && this.vspConfig.isWritingOutputEvents() && (this.controlerConfigGroup.getWriteEventsInterval()!=0)) {
-			dumpOutputEvents();
+			dumpOutputEvents(isBeforeFirstIteration);
 		}
-		dumpOutputTrips();
-        dumpOutputLegs();
-		dumpExperiencedPlans() ;
+		dumpOutputTrips(isBeforeFirstIteration);
+        dumpOutputLegs(isBeforeFirstIteration);
+		dumpExperiencedPlans(isBeforeFirstIteration) ;
 
 	}
 
-	private void dumpOutputEvents() {
+	private void dumpOutputEvents(boolean isBeforeFirstIteration) {
 		for (ControlerConfigGroup.EventsFileFormat format : this.controlerConfigGroup.getEventsFileFormats()) {
 			try {
 				Controler.DefaultFiles file;
@@ -167,14 +172,18 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
 					throw new UncheckedIOException(e);
 				}
 			} catch (Exception ee) {
-				Logger.getLogger(this.getClass()).error("writing output events did not work; probably parameters were such that no events were "
-						+ "generated in the final iteration");
+				if (isBeforeFirstIteration) {
+					Logger.getLogger(this.getClass()).warn("writing output events did not work; This is expected and safely ignored because isBeforeFirstIteration is set to true");
+				} else {
+					Logger.getLogger(this.getClass()).error("writing output events did not work; probably parameters were such that no events were "
+							+ "generated in the final iteration");
+				}
 			}
 
 		}
 	}
 
-	private void dumpOutputTrips() {
+	private void dumpOutputTrips(boolean isBeforeFirstIteration) {
 		try {
 			File toFile = new File(this.controlerIO.getOutputFilename(Controler.DefaultFiles.tripscsv));
 			File fromFile = new File(this.controlerIO.getIterationFilename(this.controlerConfigGroup.getLastIteration(), Controler.DefaultFiles.tripscsv));
@@ -184,12 +193,16 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
 				throw new UncheckedIOException(e);
 			}
 		} catch (Exception ee) {
-			Logger.getLogger(this.getClass()).error("writing output trips did not work; probably parameters were such that no trips CSV were "
-					+ "generated in the final iteration");
+			if (isBeforeFirstIteration) {
+				Logger.getLogger(this.getClass()).warn("writing output trips did not work; This is expected and safely ignored because isBeforeFirstIteration is set to true");
+			} else {
+				Logger.getLogger(this.getClass()).error("writing output trips did not work; probably parameters were such that no trips CSV were "
+						+ "generated in the final iteration");
+			}
 		}
 	}
 
-    private void dumpOutputLegs() {
+    private void dumpOutputLegs(boolean isBeforeFirstIteration) {
         try {
             File toFile = new File(this.controlerIO.getOutputFilename(Controler.DefaultFiles.legscsv));
             File fromFile = new File(this.controlerIO.getIterationFilename(this.controlerConfigGroup.getLastIteration(), Controler.DefaultFiles.legscsv));
@@ -199,12 +212,16 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
                 throw new UncheckedIOException(e);
             }
         } catch (Exception ee) {
-            Logger.getLogger(this.getClass()).error("writing output trips did not work; probably parameters were such that no trips CSV were "
-                    + "generated in the final iteration");
+			if (isBeforeFirstIteration) {
+				Logger.getLogger(this.getClass()).warn("writing output legs did not work; This is expected and safely ignored because isBeforeFirstIteration is set to true");
+			} else {
+				Logger.getLogger(this.getClass()).error("writing output legs did not work; probably parameters were such that no trips CSV were "
+						+ "generated in the final iteration");
+			}
         }
     }
 
-	private void dumpExperiencedPlans() {
+	private void dumpExperiencedPlans(boolean isBeforeFirstIteration) {
 		if (this.config.planCalcScore().isWriteExperiencedPlans() ) {
 			try {
 				File toFile = new File(this.controlerIO.getOutputFilename(Controler.DefaultFiles.experiencedPlans));
@@ -215,8 +232,12 @@ final class DumpDataAtEndImpl implements DumpDataAtEnd, ShutdownListener {
 					throw new UncheckedIOException(e);
 				}
 			} catch ( Exception ee ) {
-				Logger.getLogger(this.getClass()).error("writing output experienced plans did not work; probably parameters were such that they "
-						+ "were not generated in the final iteration", ee);
+				if (isBeforeFirstIteration) {
+					Logger.getLogger(this.getClass()).warn("writing output experienced plans did not work; This is expected and safely ignored because isBeforeFirstIteration is set to true");
+				} else {
+					Logger.getLogger(this.getClass()).error("writing output experienced plans did not work; probably parameters were such that they "
+							+ "were not generated in the final iteration", ee);
+				}
 			}
 		}
 	}
