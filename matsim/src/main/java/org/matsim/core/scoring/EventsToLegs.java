@@ -187,7 +187,7 @@ public final class EventsToLegs
 		Leg leg = PopulationUtils.createLeg(event.getLegMode());
 		leg.setDepartureTime(event.getTime());
 
-		// Copy all attributes from event to legt
+		// Copy all attributes from event to leg
 		for (String key : event.getAttributes().keySet()) {
 			leg.getAttributes().putAttribute(key, event.getAttributes().get(key));
 		}
