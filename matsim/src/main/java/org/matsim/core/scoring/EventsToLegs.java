@@ -192,6 +192,11 @@ public final class EventsToLegs
 			leg.getAttributes().putAttribute(key, event.getAttributes().get(key));
 		}
 
+		// copying to trip_id for consistency with BEAM
+		if (event.getAttributes().containsKey("tripId")) {
+			leg.getAttributes().putAttribute("trip_id", event.getAttributes().get("tripId"));
+		}
+
 		legs.put(event.getPersonId(), leg);
 
 		List<Id<Link>> route = new ArrayList<>();
