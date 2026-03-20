@@ -7,6 +7,11 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.matsim.testcases.utils.LogCounter;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author mrieser / Simunto GmbH
  */
@@ -88,6 +93,51 @@ public class MemoryObserverTest {
 		Assert.assertTrue("There should be between 2 and 4 log messages", activeLogs2 >= 2 && activeLogs2 <= 4);
 		Assert.assertTrue("There should be at most 1 log message when being stopped", inactiveLogs3 <= 1);
 
+	}
+
+	@Test
+	public void testConcurrentStartStopDoesNotThrow() throws InterruptedException {
+		org.apache.log4j.Logger memoryObserverLogger = org.apache.log4j.Logger.getLogger(MemoryObserver.class);
+		org.apache.log4j.Level previousLevel = memoryObserverLogger.getLevel();
+		memoryObserverLogger.setLevel(org.apache.log4j.Level.OFF);
+
+		int threadCount = 32;
+		int iterationsPerThread = 100;
+
+		ConcurrentLinkedQueue<Throwable> failures = new ConcurrentLinkedQueue<>();
+		CyclicBarrier startingBarrier = new CyclicBarrier(threadCount);
+		CountDownLatch doneLatch = new CountDownLatch(threadCount);
+
+		Thread.UncaughtExceptionHandler previousHandler = Thread.getDefaultUncaughtExceptionHandler();
+		Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> failures.add(throwable));
+
+		for (int i = 0; i < threadCount; i++) {
+			Thread worker = new Thread(() -> {
+				try {
+					startingBarrier.await();
+					for (int j = 0; j < iterationsPerThread; j++) {
+                        MemoryObserver.start(1);
+                        MemoryObserver.stop();
+					}
+				} catch (Throwable t) {
+					failures.add(t);
+				} finally {
+					doneLatch.countDown();
+				}
+			}, "MemoryObserverTestWorker-" + i);
+			worker.start();
+		}
+
+		try {
+			boolean completed = doneLatch.await(20, TimeUnit.SECONDS);
+			Assert.assertTrue("Concurrent start/stop workers did not finish in time", completed);
+		} finally {
+			MemoryObserver.stop();
+			Thread.setDefaultUncaughtExceptionHandler(previousHandler);
+			memoryObserverLogger.setLevel(previousLevel);
+		}
+
+		Assert.assertTrue("MemoryObserver threw exception(s) during concurrent start/stop: " + failures, failures.isEmpty());
 	}
 
 }

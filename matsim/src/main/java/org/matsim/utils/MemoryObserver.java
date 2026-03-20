@@ -3,6 +3,7 @@ package org.matsim.utils;
 import org.apache.log4j.Logger;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author mrieser / Simunto GmbH
@@ -10,27 +11,25 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class MemoryObserver {
 
 	private final static Logger LOG = Logger.getLogger(MemoryObserver.class);
-
-	private static Thread thread = null;
-	private static MemoryPrinter runnable = null;
+	private static final AtomicReference<MemoryPrinter> CURRENT_PRINTER = new AtomicReference<>();
 
 	public static void start(int interval_seconds) {
 		startMillis(interval_seconds * 1000L);
 	}
 
 	static void startMillis(long interval) {
-		stop();
-
-		runnable = new MemoryPrinter(interval);
-		thread = new Thread(runnable, "MemoryPrinter");
-		thread.setDaemon(true);
-		thread.start();
-	}
+		MemoryPrinter newPrinter = new MemoryPrinter(interval);
+		MemoryPrinter previousPrinter = CURRENT_PRINTER.getAndSet(newPrinter);
+		stopPrinter(previousPrinter);
+    }
 
 	public static void stop() {
-		if (thread != null) {
-			runnable.stopFlag.set(true);
-			thread.interrupt();
+		stopPrinter(CURRENT_PRINTER.getAndSet(null));
+	}
+
+	private static void stopPrinter(MemoryPrinter printer) {
+		if (printer != null) {
+			printer.stop();
 		}
 	}
 
@@ -45,9 +44,13 @@ public class MemoryObserver {
 
 		private final long millis;
 		private final AtomicBoolean stopFlag = new AtomicBoolean(false);
+		private final Thread thread;
 
 		MemoryPrinter(long millis) {
 			this.millis = millis;
+			this.thread = new Thread(this, "MemoryPrinter");
+			this.thread.setDaemon(true);
+			this.thread.start();
 		}
 
 		public void run() {
@@ -65,6 +68,10 @@ public class MemoryObserver {
 			}
 		}
 
+		private void stop() {
+			this.stopFlag.set(true);
+			this.thread.interrupt();
+		}
 	}
 
 
